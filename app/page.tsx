@@ -1,19 +1,27 @@
-import { Button } from "@/components/ui/button"
+import { dummyLinks } from "@/data/links";
+import { Card, CardContent } from "@/components/ui/card";
+import Link from "next/link";
 
 export default function Page() {
   return (
-    <div className="flex min-h-svh p-6">
-      <div className="flex max-w-md min-w-0 flex-col gap-4 text-sm leading-loose">
-        <div>
-          <h1 className="font-medium">Project ready!</h1>
-          <p>You may now add components and start building.</p>
-          <p>We&apos;ve already added the button component for you.</p>
-          <Button className="mt-2">Button</Button>
-        </div>
-        <div className="font-mono text-xs text-muted-foreground">
-          (Press <kbd>d</kbd> to toggle dark mode)
-        </div>
+    <div className="flex min-h-svh p-6 flex-col items-center justify-center">
+      <div className="flex w-full max-w-md flex-col gap-4">
+        {dummyLinks.map((link) => (
+          <Link
+            key={link.id}
+            href={link.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block"
+          >
+            <Card className="hover:bg-accent transition-colors">
+              <CardContent className="flex items-center justify-center p-4">
+                <span className="font-medium text-lg">{link.title}</span>
+              </CardContent>
+            </Card>
+          </Link>
+        ))}
       </div>
     </div>
-  )
+  );
 }
