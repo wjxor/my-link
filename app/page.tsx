@@ -30,6 +30,10 @@ export default function Page() {
   // Delete State
   const [linkToDelete, setLinkToDelete] = useState<LinkType | null>(null);
 
+  // Loading States for Actions
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   useEffect(() => {
     const q = query(
       collection(db, "users", "anonymous", "links"),
@@ -134,6 +138,7 @@ export default function Page() {
       finalUrl = `https://${finalUrl}`;
     }
 
+    setIsUpdating(true);
     try {
       const linkRef = doc(db, "users", "anonymous", "links", id);
       await updateDoc(linkRef, {
@@ -146,12 +151,15 @@ export default function Page() {
     } catch (error) {
       console.error("Error updating document: ", error);
       toast.error("링크를 수정하는 중 오류가 발생했습니다.");
+    } finally {
+      setIsUpdating(false);
     }
   };
 
   const handleDeleteLink = async () => {
     if (!linkToDelete) return;
 
+    setIsDeleting(true);
     try {
       const linkRef = doc(db, "users", "anonymous", "links", linkToDelete.id);
       await deleteDoc(linkRef);
@@ -160,6 +168,8 @@ export default function Page() {
     } catch (error) {
       console.error("Error deleting document: ", error);
       toast.error("링크를 삭제하는 중 오류가 발생했습니다.");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -243,8 +253,11 @@ export default function Page() {
                 </p>
               </div>
               <DialogFooter className="flex gap-4 sm:gap-4 sm:space-x-0">
-                <Button variant="outline" onClick={() => setLinkToDelete(null)}>취소</Button>
-                <Button variant="destructive" onClick={handleDeleteLink}>삭제하기</Button>
+                <Button variant="outline" onClick={() => setLinkToDelete(null)} disabled={isDeleting}>취소</Button>
+                <Button variant="destructive" onClick={handleDeleteLink} disabled={isDeleting}>
+                  {isDeleting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  삭제하기
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -290,11 +303,11 @@ export default function Page() {
                         className="bg-white border-slate-300 text-slate-900 focus-visible:ring-indigo-500"
                       />
                       <div className="flex justify-end gap-2 mt-2">
-                        <Button variant="outline" size="sm" onClick={handleCancelEdit} className="border-slate-300 text-slate-700 hover:bg-slate-200 hover:text-slate-900">
+                        <Button variant="outline" size="sm" onClick={handleCancelEdit} disabled={isUpdating} className="border-slate-300 text-slate-700 hover:bg-slate-200 hover:text-slate-900">
                           <X className="w-4 h-4 mr-1" /> 취소
                         </Button>
-                        <Button size="sm" onClick={() => handleUpdateLink(link.id)} className="bg-indigo-600 hover:bg-indigo-700 text-white">
-                          <Check className="w-4 h-4 mr-1" /> 저장
+                        <Button size="sm" onClick={() => handleUpdateLink(link.id)} disabled={isUpdating} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+                          {isUpdating ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Check className="w-4 h-4 mr-1" />} 저장
                         </Button>
                       </div>
                     </CardContent>
