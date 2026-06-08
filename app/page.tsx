@@ -7,12 +7,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Plus, Loader2 } from "lucide-react";
+import { Plus, Loader2, Pencil, Trash2, X, Check } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { collection, addDoc, serverTimestamp, query, orderBy, onSnapshot } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, query, orderBy, onSnapshot, updateDoc, deleteDoc, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 export default function Page() {
@@ -21,6 +21,14 @@ export default function Page() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newUrl, setNewUrl] = useState("");
+
+  // Edit State
+  const [editingLinkId, setEditingLinkId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editUrl, setEditUrl] = useState("");
+
+  // Delete State
+  const [linkToDelete, setLinkToDelete] = useState<LinkType | null>(null);
 
   useEffect(() => {
     const q = query(
@@ -89,6 +97,72 @@ export default function Page() {
     }
   };
 
+  const handleStartEdit = (link: LinkType) => {
+    setEditingLinkId(link.id);
+    setEditTitle(link.title);
+    setEditUrl(link.url);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingLinkId(null);
+    setEditTitle("");
+    setEditUrl("");
+  };
+
+  const handleUpdateLink = async (id: string) => {
+    const trimmedTitle = editTitle.trim();
+    const trimmedUrl = editUrl.trim();
+
+    if (!trimmedTitle || !trimmedUrl) {
+      toast.error("제목과 URL을 모두 입력해주세요.");
+      return;
+    }
+
+    if (trimmedTitle.length > 50) {
+      toast.error("제목은 50자를 초과할 수 없습니다.");
+      return;
+    }
+
+    const urlPattern = /^(https?:\/\/)?((([a-zA-Z\d]([a-zA-Z\d-]*[a-zA-Z\d])*)\.)+[a-zA-Z]{2,}|\d{1,3}(\.\d{1,3}){3})(:\d+)?(\/[-a-zA-Z\d%_.~+]*)*(\?[;&a-zA-Z\d%_.~+=-]*)?(#[-a-zA-Z\d_]*)?$/;
+    if (!urlPattern.test(trimmedUrl)) {
+      toast.error("유효한 URL 형식이 아닙니다.");
+      return;
+    }
+
+    let finalUrl = trimmedUrl;
+    if (!finalUrl.startsWith('http://') && !finalUrl.startsWith('https://')) {
+      finalUrl = `https://${finalUrl}`;
+    }
+
+    try {
+      const linkRef = doc(db, "users", "anonymous", "links", id);
+      await updateDoc(linkRef, {
+        title: trimmedTitle,
+        url: finalUrl,
+        updatedAt: serverTimestamp(),
+      });
+      setEditingLinkId(null);
+      toast.success("링크가 수정되었습니다.");
+    } catch (error) {
+      console.error("Error updating document: ", error);
+      toast.error("링크를 수정하는 중 오류가 발생했습니다.");
+    }
+  };
+
+  const handleDeleteLink = async () => {
+    if (!linkToDelete) return;
+
+    try {
+      const linkRef = doc(db, "users", "anonymous", "links", linkToDelete.id);
+      await deleteDoc(linkRef);
+      setLinkToDelete(null);
+      toast.success("링크가 삭제되었습니다.");
+    } catch (error) {
+      console.error("Error deleting document: ", error);
+      toast.error("링크를 삭제하는 중 오류가 발생했습니다.");
+    }
+  };
+
   return (
     <div className="flex min-h-svh w-full flex-col items-center justify-center bg-slate-50 p-6 text-slate-900 selection:bg-indigo-500/30 relative">
       {/* Bright Background Gradient Effect */}
@@ -154,6 +228,27 @@ export default function Page() {
             </DialogContent>
           </Dialog>
 
+          {/* Delete Confirmation Dialog */}
+          <Dialog open={!!linkToDelete} onOpenChange={(open) => !open && setLinkToDelete(null)}>
+            <DialogContent className="sm:max-w-md bg-white text-slate-900 border-slate-200">
+              <DialogHeader>
+                <DialogTitle className="text-slate-900 font-bold text-lg">정말 삭제하시겠습니까?</DialogTitle>
+              </DialogHeader>
+              <div className="py-4">
+                <p className="text-slate-800 font-medium mb-2 text-base">
+                  삭제 대상: <span className="font-extrabold text-indigo-700 bg-indigo-50 px-2 py-1 rounded-md">{linkToDelete?.title}</span>
+                </p>
+                <p className="text-red-500 text-sm font-semibold">
+                  이 작업은 되돌릴 수 없습니다.
+                </p>
+              </div>
+              <DialogFooter className="flex gap-4 sm:gap-4 sm:space-x-0">
+                <Button variant="outline" onClick={() => setLinkToDelete(null)}>취소</Button>
+                <Button variant="destructive" onClick={handleDeleteLink}>삭제하기</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
           {isLoading ? (
             <div className="flex justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-indigo-400" />
@@ -169,38 +264,99 @@ export default function Page() {
             }
 
             return (
-              <Link
-                key={link.id}
-                href={link.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group block"
-              >
-                <Card className="border-white/60 bg-white/50 backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:bg-white/80 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:shadow-indigo-500/15">
-                  <CardContent className="flex items-center gap-4 p-4">
-                    {/* Favicon */}
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 shadow-inner overflow-hidden">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img 
-                        src={faviconUrl} 
-                        alt={`${link.title} icon`} 
-                        className="h-6 w-6 rounded-sm object-contain"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.onerror = null;
-                          target.src = 'https://www.google.com/s2/favicons?domain=example.com&sz=64';
+              <div key={link.id}>
+                {editingLinkId === link.id ? (
+                  <Card className="border-indigo-200 bg-white shadow-lg ring-2 ring-indigo-500/20">
+                    <CardContent className="flex flex-col gap-3 p-4">
+                      <Input
+                        value={editTitle}
+                        onChange={(e) => setEditTitle(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleUpdateLink(link.id);
+                          if (e.key === 'Escape') handleCancelEdit();
                         }}
+                        placeholder="제목"
+                        autoFocus
+                        className="bg-white border-slate-300 text-slate-900 focus-visible:ring-indigo-500"
                       />
-                    </div>
-                    {/* Link Title */}
-                    <span className="flex-1 text-center text-base font-semibold text-slate-700 group-hover:text-slate-900 transition-colors">
-                      {link.title}
-                    </span>
-                    {/* Spacer for perfect centering */}
-                    <div className="w-10 shrink-0" />
-                  </CardContent>
-                </Card>
-              </Link>
+                      <Input
+                        value={editUrl}
+                        onChange={(e) => setEditUrl(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleUpdateLink(link.id);
+                          if (e.key === 'Escape') handleCancelEdit();
+                        }}
+                        placeholder="URL"
+                        className="bg-white border-slate-300 text-slate-900 focus-visible:ring-indigo-500"
+                      />
+                      <div className="flex justify-end gap-2 mt-2">
+                        <Button variant="outline" size="sm" onClick={handleCancelEdit} className="border-slate-300 text-slate-700 hover:bg-slate-200 hover:text-slate-900">
+                          <X className="w-4 h-4 mr-1" /> 취소
+                        </Button>
+                        <Button size="sm" onClick={() => handleUpdateLink(link.id)} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+                          <Check className="w-4 h-4 mr-1" /> 저장
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Link
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group block"
+                  >
+                    <Card className="border-white/60 bg-white/50 backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:bg-white/80 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:shadow-indigo-500/15 relative">
+                      <CardContent className="flex items-center gap-4 p-4">
+                        {/* Favicon */}
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 shadow-inner overflow-hidden">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img 
+                            src={faviconUrl} 
+                            alt={`${link.title} icon`} 
+                            className="h-6 w-6 rounded-sm object-contain"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.onerror = null;
+                              target.src = 'https://www.google.com/s2/favicons?domain=example.com&sz=64';
+                            }}
+                          />
+                        </div>
+                        {/* Link Title */}
+                        <span className="flex-1 text-center text-base font-semibold text-slate-700 group-hover:text-slate-900 transition-colors mr-8">
+                          {link.title}
+                        </span>
+                        
+                        {/* Actions (항상 표시되도록 opacity 기본값 100) */}
+                        <div className="absolute right-4 flex items-center gap-1 shrink-0">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              handleStartEdit(link);
+                            }}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setLinkToDelete(link);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                )}
+              </div>
             );
           })}
         </div>
