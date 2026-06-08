@@ -274,3 +274,43 @@
 
 ### 2026-06-09 Request 6
 - 푸쉬해
+
+### 2026-06-09 Request 7
+- // Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "********************",
+  authDomain: "********************",
+  projectId: "********************",
+  storageBucket: "********************",
+  messagingSenderId: "********************",
+  appId: "********************",
+  measurementId: "********************"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+
+
+---
+
+이 파이어베이스 설정을 기반으로 파이어베이스 사용 세팅을 진행해줘
+
+### 2026-06-09 Request 8
+- 이전 명령에서 이걸 추가안했네
+
+Firebase를 프로젝트에 연동해줘.
+lib/firebase.ts 파일 생성, 환경 변수로 API 키 관리.
+
+### 2026-06-09 Request 9
+- 요청 히스토리 적는 파일에서 리퀘스트 7에 중요한 정보라던가 있어? 가려야하는건 가려줘
+
+### 2026-06-09 Request 10
+- 커밋해줘
