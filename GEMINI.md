@@ -45,6 +45,7 @@ Project design and policies are based on the following documents in `@docs/`:
   - **Feedback**: Provide immediate feedback via shadcn/ui Toast notifications for all CRUD actions.
   - **States**: Implement clear Empty States ("Add your first link") and 404 pages for non-existent slugs.
   - **Theme**: Dark/Light mode toggle is not a priority (Single theme default).
+- **Request Logging**: Always append the exact commands/requests made by the user to `@docs/USER_REQUESTS_HISTORY.md` at the end of the file.
 
 ## 6. Data Modeling (Firestore)
 Follow the structure defined in `@docs/PRD.md`:
