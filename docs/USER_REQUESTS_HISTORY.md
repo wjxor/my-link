@@ -314,3 +314,10 @@ lib/firebase.ts 파일 생성, 환경 변수로 API 키 관리.
 
 ### 2026-06-09 Request 10
 - 커밋해줘
+
+### 2026-06-09 Request 11
+- 링크 추가 시 Firestore에 저장하는 방식으로 마이그레이션해줘
+경로 : users/anonymous/links
+
+### 2026-06-09 Request 12
+- 커밋해줘

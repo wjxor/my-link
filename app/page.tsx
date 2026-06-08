@@ -12,6 +12,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 export default function Page() {
   const [links, setLinks] = useState<LinkType[]>(dummyLinks);
@@ -19,7 +21,7 @@ export default function Page() {
   const [newTitle, setNewTitle] = useState("");
   const [newUrl, setNewUrl] = useState("");
 
-  const handleAddLink = (e: React.FormEvent) => {
+  const handleAddLink = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmedTitle = newTitle.trim();
     const trimmedUrl = newUrl.trim();
@@ -45,20 +47,33 @@ export default function Page() {
       finalUrl = `https://${finalUrl}`;
     }
 
-    const newLink: LinkType = {
-      id: Date.now().toString(),
-      title: trimmedTitle,
-      url: finalUrl,
-      clickCount: 0,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
+    try {
+      const docRef = await addDoc(collection(db, "users", "anonymous", "links"), {
+        title: trimmedTitle,
+        url: finalUrl,
+        clickCount: 0,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
 
-    setLinks([newLink, ...links]);
-    setIsDialogOpen(false);
-    setNewTitle("");
-    setNewUrl("");
-    toast.success("새로운 링크가 추가되었습니다.");
+      const newLink: LinkType = {
+        id: docRef.id,
+        title: trimmedTitle,
+        url: finalUrl,
+        clickCount: 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      setLinks([newLink, ...links]);
+      setIsDialogOpen(false);
+      setNewTitle("");
+      setNewUrl("");
+      toast.success("새로운 링크가 추가되었습니다.");
+    } catch (error) {
+      console.error("Error adding document: ", error);
+      toast.error("링크를 추가하는 중 오류가 발생했습니다.");
+    }
   };
 
   return (
