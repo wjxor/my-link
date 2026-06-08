@@ -321,3 +321,18 @@ lib/firebase.ts 파일 생성, 환경 변수로 API 키 관리.
 
 ### 2026-06-09 Request 12
 - 커밋해줘
+
+### 2026-06-09 Request 13
+- 페이지 로드 시 Firestore에서 링크 불러와줘.
+경로 : users/anonymous/links
+createdAt기준 최신순 정렬
+링크를 추가하면 목록도 갱신되어야 해
+
+### 2026-06-09 Request 14
+- 혹시 내가 작업할떄 Task나 Implementation plan을 안띄우게 해놨어?
+
+### 2026-06-09 Request 15
+- 업데이트 갱신 도중에는 로딩 표시를 추가해주는게 어때?
+
+### 2026-06-09 Request 16
+- 커밋해줘

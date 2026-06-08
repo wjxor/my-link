@@ -1,25 +1,48 @@
 "use client";
 
-import { useState } from "react";
-import { dummyLinks, Link as LinkType } from "@/data/links";
+import { useState, useEffect } from "react";
+import { Link as LinkType } from "@/data/links";
 import { dummyUser } from "@/data/user";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, query, orderBy, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 export default function Page() {
-  const [links, setLinks] = useState<LinkType[]>(dummyLinks);
+  const [links, setLinks] = useState<LinkType[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newUrl, setNewUrl] = useState("");
+
+  useEffect(() => {
+    const q = query(
+      collection(db, "users", "anonymous", "links"),
+      orderBy("createdAt", "desc")
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const fetchedLinks = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        title: doc.data().title,
+        url: doc.data().url,
+        clickCount: doc.data().clickCount || 0,
+        createdAt: doc.data().createdAt?.toDate() || new Date(),
+        updatedAt: doc.data().updatedAt?.toDate() || new Date(),
+      })) as LinkType[];
+      setLinks(fetchedLinks);
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const handleAddLink = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,16 +79,6 @@ export default function Page() {
         updatedAt: serverTimestamp(),
       });
 
-      const newLink: LinkType = {
-        id: docRef.id,
-        title: trimmedTitle,
-        url: finalUrl,
-        clickCount: 0,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
-      setLinks([newLink, ...links]);
       setIsDialogOpen(false);
       setNewTitle("");
       setNewUrl("");
@@ -141,7 +154,11 @@ export default function Page() {
             </DialogContent>
           </Dialog>
 
-          {links.map((link) => {
+          {isLoading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-indigo-400" />
+            </div>
+          ) : links.map((link) => {
             let faviconUrl = "";
             try {
               const urlObj = new URL(link.url);
