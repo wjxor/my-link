@@ -6,7 +6,7 @@ import { auth } from "@/lib/firebase";
 import { GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { LogOut, LogIn, Loader2 } from "lucide-react";
+import { LogOut, LogIn, Loader2, Copy, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -42,6 +42,24 @@ export function Header() {
     }
   };
 
+  const handleCopyLink = async () => {
+    if (!user) return;
+    const slug = user.email ? user.email.split("@")[0] : user.displayName;
+    const url = `${window.location.origin}/${slug}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success("내 링크가 클립보드에 복사되었습니다!");
+    } catch (err) {
+      toast.error("링크 복사에 실패했습니다.");
+    }
+  };
+
+  const handleViewLivePage = () => {
+    if (!user) return;
+    const slug = user.email ? user.email.split("@")[0] : user.displayName;
+    window.open(`/${slug}`, "_blank");
+  };
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-slate-200/50 bg-white/50 backdrop-blur-xl">
       <div className="container mx-auto flex h-16 max-w-4xl items-center justify-between px-4 sm:px-6">
@@ -64,9 +82,27 @@ export function Header() {
                     <AvatarFallback>{user.displayName?.substring(0, 2).toUpperCase() || "U"}</AvatarFallback>
                   </Avatar>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuGroup>
-                    <DropdownMenuLabel>내 계정</DropdownMenuLabel>
+                    <DropdownMenuLabel className="font-normal">
+                      <div className="flex flex-col space-y-1">
+                        <p className="text-sm font-medium leading-none">{user.displayName}</p>
+                        <p className="text-xs leading-none text-muted-foreground">
+                          {user.email}
+                        </p>
+                      </div>
+                    </DropdownMenuLabel>
+                  </DropdownMenuGroup>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuGroup>
+                    <DropdownMenuItem onClick={handleCopyLink} className="cursor-pointer">
+                      <Copy className="mr-2 h-4 w-4 text-slate-500" />
+                      내 링크 복사하기
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleViewLivePage} className="cursor-pointer">
+                      <ExternalLink className="mr-2 h-4 w-4 text-slate-500" />
+                      내 페이지 미리보기
+                    </DropdownMenuItem>
                   </DropdownMenuGroup>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSignOut} className="text-red-600 focus:text-red-700 focus:bg-red-50 cursor-pointer">
