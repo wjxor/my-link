@@ -61,7 +61,7 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-slate-200/50 bg-white/50 backdrop-blur-xl">
+    <header className="sticky top-0 z-50 w-full border-b border-slate-200/50 bg-slate-50/80 backdrop-blur-xl">
       <div className="container mx-auto flex h-16 max-w-4xl items-center justify-between px-4 sm:px-6">
         <Link href="/" className="flex items-center gap-2">
           <span className="text-xl font-bold tracking-tight text-indigo-600">MyLink</span>
@@ -72,9 +72,14 @@ export function Header() {
             <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
           ) : user ? (
             <div className="flex items-center gap-3">
-              <span className="hidden text-sm font-medium text-slate-700 sm:inline-block">
-                {user.displayName}
-              </span>
+              <Button 
+                variant="outline"
+                size="sm" 
+                onClick={handleViewLivePage}
+                className="bg-white text-slate-900 border-slate-200 hover:bg-slate-50 shadow-sm font-medium"
+              >
+                내 페이지
+              </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger render={<button className="outline-none rounded-full focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 transition-all" />}>
                   <Avatar className="h-8 w-8 border border-slate-200 cursor-pointer">
