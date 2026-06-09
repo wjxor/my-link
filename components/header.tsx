@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export function Header() {
-  const { user, isLoading } = useAuth();
+  const { user, profile, isLoading } = useAuth();
 
   const handleSignIn = async () => {
     try {
@@ -44,7 +44,7 @@ export function Header() {
 
   const handleCopyLink = async () => {
     if (!user) return;
-    const slug = user.email ? user.email.split("@")[0] : user.displayName;
+    const slug = profile?.displayName || (user.email ? user.email.split("@")[0] : user.displayName);
     const url = `${window.location.origin}/${slug}`;
     try {
       await navigator.clipboard.writeText(url);
@@ -56,7 +56,7 @@ export function Header() {
 
   const handleViewLivePage = () => {
     if (!user) return;
-    const slug = user.email ? user.email.split("@")[0] : user.displayName;
+    const slug = profile?.displayName || (user.email ? user.email.split("@")[0] : user.displayName);
     window.open(`/${slug}`, "_blank");
   };
 
@@ -86,7 +86,7 @@ export function Header() {
                   <DropdownMenuGroup>
                     <DropdownMenuLabel className="font-normal">
                       <div className="flex flex-col space-y-1">
-                        <p className="text-sm font-medium leading-none">{user.displayName}</p>
+                        <p className="text-sm font-medium leading-none">{profile?.username || user.displayName}</p>
                         <p className="text-xs leading-none text-muted-foreground">
                           {user.email}
                         </p>

@@ -12,16 +12,22 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { collection, addDoc, serverTimestamp, query, orderBy, onSnapshot, updateDoc, deleteDoc, doc, getDoc, setDoc } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, query, orderBy, onSnapshot, updateDoc, deleteDoc, doc, getDoc, setDoc, getDocs, where } from "firebase/firestore";
 import { db, auth } from "@/lib/firebase";
 import { useAuth } from "@/hooks/use-auth";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 
 export default function Page() {
-  const { user, isLoading: isAuthLoading } = useAuth();
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const { user, profile, isLoading: isAuthLoading } = useAuth();
   const [links, setLinks] = useState<LinkType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Profile Edit State
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [editProfileDisplayName, setEditProfileDisplayName] = useState("");
+  const [editProfileUsername, setEditProfileUsername] = useState("");
+  const [editProfileBio, setEditProfileBio] = useState("");
+  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newTitle, setNewTitle] = useState("");
@@ -67,13 +73,6 @@ export default function Page() {
     };
 
     fetchOrCreateProfile().then(() => {
-      const userRef = doc(db, "users", user.uid);
-      const unsubscribeProfile = onSnapshot(userRef, (docSnap) => {
-        if (docSnap.exists()) {
-          setProfile({ uid: user.uid, ...docSnap.data() } as UserProfile);
-        }
-      });
-
       const q = query(
         collection(db, "users", user.uid, "links"),
         orderBy("createdAt", "desc")
@@ -93,7 +92,6 @@ export default function Page() {
       });
 
       return () => {
-        unsubscribeProfile();
         unsubscribeLinks();
       };
     });
@@ -143,6 +141,66 @@ export default function Page() {
     } catch (error) {
       console.error("Error adding document: ", error);
       toast.error("링크를 추가하는 중 오류가 발생했습니다.");
+    }
+  };
+
+  const handleStartEditProfile = () => {
+    if (!profile) return;
+    setEditProfileDisplayName(profile.displayName);
+    setEditProfileUsername(profile.username);
+    setEditProfileBio(profile.bio);
+    setIsEditingProfile(true);
+  };
+
+  const handleCancelEditProfile = () => {
+    setIsEditingProfile(false);
+  };
+
+  const handleSaveProfile = async () => {
+    if (!user || !profile) return;
+    
+    const trimmedDisplayName = editProfileDisplayName.trim().toLowerCase();
+    const trimmedUsername = editProfileUsername.trim();
+    const trimmedBio = editProfileBio.trim();
+
+    if (!trimmedDisplayName || !trimmedUsername) {
+      toast.error("URL 슬러그와 이름은 필수입니다.");
+      return;
+    }
+
+    const slugPattern = /^[a-z0-9-]+$/;
+    if (!slugPattern.test(trimmedDisplayName)) {
+      toast.error("URL 슬러그는 영문 소문자, 숫자, 하이픈(-)만 사용할 수 있습니다.");
+      return;
+    }
+
+    setIsUpdatingProfile(true);
+    try {
+      if (trimmedDisplayName !== profile.displayName) {
+        const q = query(collection(db, "users"), where("displayName", "==", trimmedDisplayName));
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty) {
+          toast.error("이미 사용 중인 접속 URL(슬러그)입니다. 다른 슬러그를 입력해주세요.");
+          setIsUpdatingProfile(false);
+          return;
+        }
+      }
+
+      const userRef = doc(db, "users", user.uid);
+      await updateDoc(userRef, {
+        displayName: trimmedDisplayName,
+        username: trimmedUsername,
+        bio: trimmedBio,
+        updatedAt: serverTimestamp(),
+      });
+      
+      toast.success("프로필이 성공적으로 업데이트되었습니다.");
+      setIsEditingProfile(false);
+    } catch (error) {
+      console.error("Error updating profile: ", error);
+      toast.error("프로필 업데이트 중 오류가 발생했습니다.");
+    } finally {
+      setIsUpdatingProfile(false);
     }
   };
 
@@ -306,17 +364,80 @@ export default function Page() {
       <div className="relative z-10 flex w-full max-w-md flex-col items-center gap-8 py-10">
         {/* Profile Section */}
         {profile && (
-          <div className="flex flex-col items-center gap-4 text-center">
+          <div className="flex flex-col items-center gap-4 text-center w-full relative group">
             <Avatar className="h-24 w-24 border-4 border-white shadow-xl">
               <AvatarImage src={profile.avatarUrl} alt={`@${profile.displayName}`} />
               <AvatarFallback>{profile.username.substring(0, 2).toUpperCase()}</AvatarFallback>
             </Avatar>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-slate-800">{profile.username}</h1>
-              <p className="mt-1 text-sm text-slate-500 font-medium whitespace-pre-wrap">
-                {profile.bio}
-              </p>
-            </div>
+            
+            {isEditingProfile ? (
+              <Card className="w-full border-indigo-200 bg-white shadow-lg ring-2 ring-indigo-500/20 mt-2">
+                <CardContent className="flex flex-col gap-4 p-5">
+                  <div className="space-y-2 text-left">
+                    <Label htmlFor="username">이름</Label>
+                    <Input
+                      id="username"
+                      value={editProfileUsername}
+                      onChange={(e) => setEditProfileUsername(e.target.value)}
+                      placeholder="이름을 입력하세요"
+                      className="bg-white border-slate-300 text-slate-900 focus-visible:ring-indigo-500"
+                    />
+                  </div>
+                  <div className="space-y-2 text-left">
+                    <Label htmlFor="slug">접속 URL (슬러그)</Label>
+                    <div className="flex items-center">
+                      <span className="text-slate-500 bg-slate-100 border border-r-0 border-slate-300 rounded-l-md px-3 py-2 text-sm flex items-center h-8">
+                        mylink.com/
+                      </span>
+                      <Input
+                        id="slug"
+                        value={editProfileDisplayName}
+                        onChange={(e) => setEditProfileDisplayName(e.target.value)}
+                        placeholder="영문, 숫자, 하이픈"
+                        className="bg-white rounded-l-none border-slate-300 text-slate-900 focus-visible:ring-indigo-500"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2 text-left">
+                    <Label htmlFor="bio">한 줄 소개</Label>
+                    <textarea
+                      id="bio"
+                      value={editProfileBio}
+                      onChange={(e) => setEditProfileBio(e.target.value)}
+                      placeholder="자신을 소개해주세요"
+                      className="flex min-h-[80px] w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus-visible:outline-none focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-50 resize-none"
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2 mt-2">
+                    <Button variant="outline" size="sm" onClick={handleCancelEditProfile} disabled={isUpdatingProfile} className="bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200 hover:text-slate-900">
+                      <X className="w-4 h-4 mr-1" /> 취소
+                    </Button>
+                    <Button size="sm" onClick={handleSaveProfile} disabled={isUpdatingProfile} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+                      {isUpdatingProfile ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Check className="w-4 h-4 mr-1" />} 저장
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="relative w-full flex flex-col items-center">
+                <h1 className="text-2xl font-bold tracking-tight text-slate-800">{profile.username}</h1>
+                <p className="mt-1 text-sm text-slate-500 font-medium whitespace-pre-wrap px-8">
+                  {profile.bio}
+                </p>
+                <div className="mt-2 text-xs font-mono text-slate-400 bg-slate-100/50 inline-block px-2 py-1 rounded-md">
+                  /{profile.displayName}
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleStartEditProfile} 
+                  className="mt-4 rounded-full border-slate-200 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 hover:border-indigo-200 transition-colors"
+                >
+                  <Pencil className="h-3.5 w-3.5 mr-2" />
+                  프로필 수정
+                </Button>
+              </div>
+            )}
           </div>
         )}
 
@@ -422,7 +543,7 @@ export default function Page() {
                         className="bg-white border-slate-300 text-slate-900 focus-visible:ring-indigo-500"
                       />
                       <div className="flex justify-end gap-2 mt-2">
-                        <Button variant="outline" size="sm" onClick={handleCancelEdit} disabled={isUpdating} className="border-slate-300 text-slate-700 hover:bg-slate-200 hover:text-slate-900">
+                        <Button variant="outline" size="sm" onClick={handleCancelEdit} disabled={isUpdating} className="bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200 hover:text-slate-900">
                           <X className="w-4 h-4 mr-1" /> 취소
                         </Button>
                         <Button size="sm" onClick={() => handleUpdateLink(link.id)} disabled={isUpdating} className="bg-indigo-600 hover:bg-indigo-700 text-white">
