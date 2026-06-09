@@ -4,6 +4,7 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/sonner"
 import { cn } from "@/lib/utils";
+import { Header } from "@/components/header";
 
 const inter = Inter({subsets:['latin'],variable:'--font-sans'})
 
@@ -19,13 +20,16 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="ko"
       suppressHydrationWarning
       className={cn("antialiased", fontMono.variable, "font-sans", inter.variable)}
     >
       <body>
         <ThemeProvider>
-          {children}
+          <Header />
+          <main className="flex-1">
+            {children}
+          </main>
           <Toaster />
         </ThemeProvider>
       </body>
