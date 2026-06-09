@@ -435,3 +435,16 @@ createdAt기준 최신순 정렬
 
 ### 2026-06-09 Request 42
 - 커밋해줘
+
+## 2026-06-09: Firebase Security Rules
+**Request:** Firebase Security Rules 작성해줘.
+- 읽기: 누구나 가능
+- 쓰기: 로그인 + 본인 ID 일치 시만
+경로: users/{userId}/links, users/{userId}/profile
+내가 빼먹은 기능들(프로필 편집)에 대해서도 보안 규칙을 제시해줘
+
+## 2026-06-09: 제안된 보안 규칙(1, 2, 3) 모두 적용
+**Request:** 1, 2, 3 규칙 적용해줘
+
+## 2026-06-09: 디스플레이 네임 수정 기능 제거
+**Request:** 디스플레이 네임 수정 기능을 제거해줘
