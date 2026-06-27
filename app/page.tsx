@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Plus, Loader2, Pencil, Trash2, X, Check, LinkIcon } from "lucide-react";
+import { Plus, Loader2, Pencil, Trash2, X, Check, LinkIcon, MousePointerClick } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -575,10 +575,16 @@ export default function Page() {
                             }}
                           />
                         </div>
-                        {/* Link Title */}
-                        <span className="flex-1 text-center text-base font-semibold text-slate-700 group-hover:text-slate-900 transition-colors mr-8">
-                          {link.title}
-                        </span>
+                        {/* Link Title & Stats */}
+                        <div className="flex-1 flex flex-col items-center mr-8">
+                          <span className="text-base font-semibold text-slate-700 group-hover:text-slate-900 transition-colors">
+                            {link.title}
+                          </span>
+                          <div className="flex items-center gap-1 mt-0.5 text-xs text-slate-400 font-medium">
+                            <MousePointerClick className="h-3 w-3" />
+                            <span>{link.clickCount || 0}</span>
+                          </div>
+                        </div>
                         
                         {/* Actions */}
                         <div className="absolute right-4 flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">

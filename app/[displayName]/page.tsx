@@ -67,6 +67,18 @@ export default function UserPage() {
     fetchUserData();
   }, [displayName]);
 
+  const handleLinkClick = async (linkId: string) => {
+    if (!pageUser) return;
+    try {
+      const linkRef = doc(db, "users", pageUser.uid, "links", linkId);
+      await updateDoc(linkRef, {
+        clickCount: increment(1)
+      });
+    } catch (error) {
+      console.error("Error updating click count:", error);
+    }
+  };
+
   // Visitor Count Increment Logic
   useEffect(() => {
     if (isAuthLoading || !pageUser || hasIncrementedRef.current) return;
@@ -157,6 +169,7 @@ export default function UserPage() {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="group block"
+                  onClick={() => handleLinkClick(link.id)}
                 >
                   <Card className="border-white/60 bg-white/50 backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:bg-white/80 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:shadow-indigo-500/15 relative">
                     <CardContent className="flex items-center gap-4 p-4">
