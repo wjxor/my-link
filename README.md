@@ -14,6 +14,10 @@
 </p>
 
 <p align="center">
+  <a href="https://my-link-gamma-eight.vercel.app/"><strong>🌐 서비스 바로가기</strong></a>
+</p>
+
+<p align="center">
   <a href="#-핵심-기능">핵심 기능</a> •
   <a href="#-기술-스택">기술 스택</a> •
   <a href="#-시작하기">시작하기</a> •
