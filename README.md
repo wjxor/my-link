@@ -1,8 +1,4 @@
-<p align="center">
-  <img src="https://www.google.com/s2/favicons?sz=64&domain=mylink.com" alt="MyLink Logo" width="64" height="64" />
-</p>
-
-<h1 align="center">MyLink</h1>
+<h1 align="center">🔗 MyLink</h1>
 
 <p align="center">
   <strong>나만의 모든 링크를 한 곳에 🔗</strong>
